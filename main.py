@@ -15,7 +15,7 @@ COLUMN_WIDTH = 3
 # Number of game cycles to be executed in one second
 FRAMERATE = 6
 # Min and max bounds for time between generation, milliseconds
-CACTUS_GENERATION_BOUNDS = (1000, 3000)
+CACTUS_GENERATION_BOUNDS = (500, 2000)
 
 DINO_CHAR = "◼"
 CACTUS_CHAR = "8"
@@ -29,10 +29,14 @@ class GameData:  # pylint: disable=too-few-public-methods
     game_over = False
     last_tick: float = 0
     jump_stage: float = 0
+    score: int = 0
     last_cactus_generated: float = 0
     cactus_generation_time: float = 0
     cactus_positions: list[int] = []
-    keys: dict[str, tuple[str or int]] = {"jump": ("w", "space"), "duck": ("s",)}
+    keys: dict[str, tuple[str or int]] = {
+        "jump": ("w", "space"),
+        "duck": ("s",),
+    }
     was_pressed: set[str] = set()
 
 
@@ -45,17 +49,24 @@ def write_char(text, x_pos, y_pos) -> None:
 
 def render() -> None:
     """Rerenders the game window."""
-    display.clear()
     jump_stage = GameData.jump_stage
-    if jump_stage == 3:
+    if jump_stage > 2:
         jump_stage = 1
-    y_pos = NUM_ROWS - int(jump_stage) - 1
-    write_char(DINO_CHAR, 0, y_pos)
-    if jump_stage != -1:
-        write_char(DINO_CHAR, 0, y_pos - 1)
+    if int(jump_stage) != jump_stage:
+        jump_stage += 0.5
+    dino_y = NUM_ROWS - int(jump_stage) - 1
     cactus_y = NUM_ROWS - 1
+    score_text = str(GameData.score).rjust(5, "0")
+    score_text_x = COLUMN_WIDTH * NUM_COLUMNS - len(score_text) - 1
+    score_text_y = 0
+
+    display.clear()
+    write_char(DINO_CHAR, 0, dino_y)
+    if jump_stage != -1:
+        write_char(DINO_CHAR, 0, dino_y - 1)
     for cactus_x in GameData.cactus_positions:
         write_char(CACTUS_CHAR, cactus_x, cactus_y)
+    display.write_string(score_text, (score_text_x, score_text_y))
 
 
 def get_input() -> None:
@@ -96,6 +107,7 @@ def tick() -> None:
         GameData.cactus_generation_time = random.randint(*CACTUS_GENERATION_BOUNDS)
         GameData.last_cactus_generated = GameData.last_tick
         GameData.cactus_positions.append(4)
+    GameData.score += 1
 
 
 def main() -> None:
@@ -119,7 +131,10 @@ def main() -> None:
         display.write_string("GAME", (text_x, text_y))
         display.write_string("OVER!", (text_x, text_y + 1))
         display.close()
-    input("Press enter to continue...\n")
+    try:
+        input("Press enter to continue...\n")
+    except KeyboardInterrupt:
+        pass
     file_manager.log("Exitted.")
 
 
