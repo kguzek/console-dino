@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Main game process."""
 
 # Standard library imports
